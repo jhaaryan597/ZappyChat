@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "60256744621",
+    "project_id": "zappychat-e8c89",
+    "storage_bucket": "zappychat-e8c89.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60256744621:android:8a23884ae4a25a07a20224",
+        "android_client_info": {
+          "package_name": "com.example.zappychat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "60256744621-q17r28865ae3ersv7giv2soin8dn2cj8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.zappychat",
+            "certificate_hash": "ea401b67ff0f42405919fbebb3516f3b6a8b3fcd"
+          }
+        },
+        {
+          "client_id": "60256744621-050alteh2rkk4j74758j3grpf9i8qed7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDKdYG_uTwRGrqtVh0TCvijFGD0OMuoQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "60256744621-050alteh2rkk4j74758j3grpf9i8qed7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
