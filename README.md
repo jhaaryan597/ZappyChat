@@ -18,9 +18,8 @@
 
 **Actual app looks even better! 😃**
 
-<kbd>
- 
-</kbd>
+![Banner](images/result1.png)
+![Banner](images/result2.png)
 
 ---
 
