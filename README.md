@@ -11,7 +11,7 @@
 ## 📦 APKs:
 
 - **APK:**  
-  [Download APK]() (~57.3 MB)  
+  [Download APK](https://drive.google.com/file/d/1ChlUt9_iun1_VscxUfshgnfJzmtFdaPi/view?usp=sharing) (~54.7 MB)  
 ---
 
 ## 📸 Screenshots:
