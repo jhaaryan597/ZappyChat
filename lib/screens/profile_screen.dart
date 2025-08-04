@@ -2,9 +2,9 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:zappychat/helper/dialogs.dart';
@@ -45,6 +45,7 @@ class _ProfileScreen extends State<ProfileScreen> {
         floatingActionButton: Padding(
           padding: const EdgeInsets.only(bottom: 20),
           child: FloatingActionButton.extended(
+            heroTag: 'profile_logout_button',
             onPressed: () async {
               //show progress dialog
               Dialogs.showProgressBar(context);
@@ -52,14 +53,13 @@ class _ProfileScreen extends State<ProfileScreen> {
               await APIs.updateActiveStatus(false);
 
               // sign out from app
-              await APIs.auth.signOut().then((value) async {
+              await Supabase.instance.client.auth.signOut().then((value) async {
                 await GoogleSignIn().signOut().then((value) {
                   // hide progress dialog
                   Navigator.pop(context);
                   // move from home screen
                   Navigator.pop(context);
 
-                  APIs.auth = FirebaseAuth.instance;
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => LoginScreen()),

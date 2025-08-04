@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'dart:developer';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zappychat/helper/dialogs.dart';
 import 'package:zappychat/screens/home_screen.dart';
 
@@ -30,19 +30,18 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  _handleGoogleBtnClick() {
-    // Gola dikha
+  _handleGoogleBtnClick() async {
     Dialogs.showProgressBar(context);
-    _signInWithGoogle().then((user) async {
-      // Gola hata
+    try {
+      final authResponse = await _signInWithGoogle();
       Navigator.pop(context);
-      if (user != null) {
+      if (authResponse.user != null) {
         if (await APIs.userExists()) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const HomeScreen()),
           );
-        }else{
+        } else {
           await APIs.createUser().then((value) {
             Navigator.pushReplacement(
               context,
@@ -51,32 +50,40 @@ class _LoginScreenState extends State<LoginScreen> {
           });
         }
       }
-      // log('\nUser : ${user.user}');
-    });
+    } catch (e) {
+      Navigator.pop(context);
+      log("\n_handleGoogleBtnClick : $e");
+      Dialogs.showSnackbar(context, 'Something went wrong (Check Internet!)');
+    }
   }
 
-  Future<UserCredential?> _signInWithGoogle() async {
+  Future<AuthResponse> _signInWithGoogle() async {
     try {
       await InternetAddress.lookup('google.com');
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication? googleAuth =
-          await googleUser?.authentication;
-
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth?.accessToken,
-        idToken: googleAuth?.idToken,
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId:
+            '60256744621-050alteh2rkk4j74758j3grpf9i8qed7.apps.googleusercontent.com', // from google_services.json
       );
+      final googleUser = await googleSignIn.signIn();
+      final googleAuth = await googleUser!.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
 
-      // Once signed in, return the UserCredential
-      return await APIs.auth.signInWithCredential(credential);
+      if (accessToken == null) {
+        throw 'No Access Token found.';
+      }
+      if (idToken == null) {
+        throw 'No ID Token found.';
+      }
+
+      return await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
     } catch (e) {
-      log("\n_signInWithGoogle : $e");
-      Dialogs.showSnackbar(context, 'Something went wrong (Check Internet!)');
-      return null;
+      log("\n_signInWithGoogle Error: $e");
+      rethrow;
     }
   }
 

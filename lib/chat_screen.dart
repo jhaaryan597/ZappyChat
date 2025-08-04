@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -68,10 +69,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     // If some or all data is loaded then how it
                     case ConnectionState.active:
                     case ConnectionState.done:
-                      final data = snapshot.data?.docs;
+                      final data = snapshot.data;
                       _list =
                           data
-                              ?.map((e) => Message.fromJson(e.data()))
+                              ?.map((e) => Message.fromJson(e))
                               .toList() ??
                           [];
 
@@ -143,9 +144,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: StreamBuilder(
         stream: APIs.getUserInfo(widget.user),
         builder: (context, snapshot) {
-          final data = snapshot.data?.docs;
+          final data = snapshot.data;
           final list =
-              data?.map((e) => ChatUser.fromJson(e.data())).toList() ?? [];
+              data?.map((e) => ChatUser.fromJson(e)).toList() ?? [];
 
           return Row(
             children: [
@@ -279,6 +280,11 @@ class _ChatScreenState extends State<ChatScreen> {
                             log(
                               'Image Path: ${image.path} -- MimeType: ${image.mimeType}',
                             );
+                            final imageUrl = await APIs.uploadFile(
+                              File(image.path),
+                              'images/${DateTime.now().millisecondsSinceEpoch}.${image.path.split('.').last}',
+                            );
+                            await APIs.sendMessage(widget.user, imageUrl, type: Type.image);
                           }
                         },
                         icon: const Icon(
@@ -296,6 +302,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           );
                           if (image != null) {
                             log('Image Path: ${image.path}');
+                            final imageUrl = await APIs.uploadFile(
+                              File(image.path),
+                              'images/${DateTime.now().millisecondsSinceEpoch}.${image.path.split('.').last}',
+                            );
+                            await APIs.sendMessage(widget.user, imageUrl, type: Type.image);
                           }
                         },
                         icon: const Icon(

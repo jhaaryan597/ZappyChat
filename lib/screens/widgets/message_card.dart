@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:zappychat/api/apis.dart';
@@ -18,7 +19,7 @@ class MessageCard extends StatefulWidget {
 class _MessageCardState extends State<MessageCard> {
   @override
   Widget build(BuildContext context) {
-    bool isMe = APIs.user.uid == widget.message.fromId;
+    bool isMe = APIs.user.id == widget.message.fromId;
     return InkWell(
       onLongPress: () {
         _showBottomSheet(isMe);
@@ -61,10 +62,33 @@ class _MessageCardState extends State<MessageCard> {
                 ),
               ],
             ),
-            child: Text(
-              widget.message.msg,
-              style: const TextStyle(color: Colors.black87, fontSize: 16),
-            ),
+            child: widget.message.type == Type.text
+                ? Text(
+                    widget.message.msg,
+                    style: const TextStyle(color: Colors.black87, fontSize: 16),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: FutureBuilder<String>(
+                      future: APIs.createSignedUrl(widget.message.msg),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+                        if (snapshot.hasError) {
+                          return const Icon(Icons.image, size: 70);
+                        }
+                        return CachedNetworkImage(
+                          imageUrl: snapshot.data!,
+                          placeholder: (context, url) =>
+                              const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.image, size: 70),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ),
         Padding(
@@ -123,10 +147,33 @@ class _MessageCardState extends State<MessageCard> {
                 ),
               ],
             ),
-            child: Text(
-              widget.message.msg,
-              style: const TextStyle(color: Colors.black87, fontSize: 16),
-            ),
+            child: widget.message.type == Type.text
+                ? Text(
+                    widget.message.msg,
+                    style: const TextStyle(color: Colors.black87, fontSize: 16),
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: FutureBuilder<String>(
+                      future: APIs.createSignedUrl(widget.message.msg),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+                        if (snapshot.hasError) {
+                          return const Icon(Icons.image, size: 70);
+                        }
+                        return CachedNetworkImage(
+                          imageUrl: snapshot.data!,
+                          placeholder: (context, url) =>
+                              const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.image, size: 70),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ),
       ],

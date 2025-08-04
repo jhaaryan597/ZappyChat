@@ -28,8 +28,8 @@ class _SplashScreenState extends State<SplashScreen> {
         statusBarColor: Colors.blueAccent
       ));
 
-      if (APIs.auth.currentUser != null) {
-        log('\nUser: ${APIs.auth .currentUser}');
+      if (APIs.supabase.auth.currentUser != null) {
+        log('\nUser: ${APIs.supabase.auth.currentUser}');
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),

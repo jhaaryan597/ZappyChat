@@ -31,11 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    APIs.getSelfInfo();
 
     SystemChannels.lifecycle.setMessageHandler((message) {
       log('Message : $message');
-      if (APIs.auth.currentUser != null) {
+      if (APIs.supabase.auth.currentUser != null) {
         if (message.toString().contains('pause')) {
           APIs.updateActiveStatus(false);
         }
@@ -119,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               bottom: 80,
               right: 20,
               child: FloatingActionButton(
+                heroTag: 'ai_button',
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
@@ -134,9 +134,10 @@ class _HomeScreenState extends State<HomeScreen> {
               bottom: 20,
               right: 20,
               child: FloatingActionButton(
+                heroTag: 'logout_button',
                 onPressed: () async {
                   // sign out
-                  await APIs.auth.signOut();
+                  await APIs.supabase.auth.signOut();
                   await GoogleSignIn().signOut();
 
                   // navigate to the login page
@@ -152,49 +153,58 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         // chat card
-        body: GestureDetector(
-          // hide the keyboard
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: StreamBuilder(
-            stream: APIs.getAllUsers(),
-            builder: (context, snapshot) {
-              switch (snapshot.connectionState) {
-              // if data is loading
-                case ConnectionState.waiting:
-                case ConnectionState.none:
-                  return const Center(child: CircularProgressIndicator());
-              // If some or all data is loaded then how it
-                case ConnectionState.active:
-                case ConnectionState.done:
-                  final data = snapshot.data?.docs;
-                  _list =
-                      data?.map((e) => ChatUser.fromJson(e.data())).toList() ??
-                          [];
+        body: FutureBuilder(
+          future: APIs.getSelfInfo(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return GestureDetector(
+              // hide the keyboard
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: StreamBuilder(
+                stream: APIs.getAllUsers(),
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    // if data is loading
+                    case ConnectionState.waiting:
+                    case ConnectionState.none:
+                      return const Center(child: CircularProgressIndicator());
+                    // If some or all data is loaded then how it
+                    case ConnectionState.active:
+                    case ConnectionState.done:
+                      final data = snapshot.data;
+                      _list =
+                          data?.map((e) => ChatUser.fromJson(e)).toList() ??
+                              [];
 
-                  if (_list.isNotEmpty) {
-                    return ListView.builder(
-                      itemCount:
-                      _isSearching ? _searchList.length : _list.length,
-                      padding: EdgeInsets.only(top: mq.height * 0.01),
-                      physics: BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        return ChatUserCard(
-                          user:
-                          _isSearching ? _searchList[index] : _list[index],
+                      if (_list.isNotEmpty) {
+                        return ListView.builder(
+                          itemCount:
+                              _isSearching ? _searchList.length : _list.length,
+                          padding: EdgeInsets.only(top: mq.height * 0.01),
+                          physics: BouncingScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            return ChatUserCard(
+                              user: _isSearching
+                                  ? _searchList[index]
+                                  : _list[index],
+                            );
+                          },
                         );
-                      },
-                    );
-                  } else {
-                    return const Center(
-                      child: Text(
-                        'No Connections Found!',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    );
+                      } else {
+                        return const Center(
+                          child: Text(
+                            'No Connections Found!',
+                            style: TextStyle(fontSize: 20),
+                          ),
+                        );
+                      }
                   }
-              }
-            },
-          ),
+                },
+              ),
+            );
+          },
         ),
       ),
     );

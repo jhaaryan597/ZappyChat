@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:zappychat/screens/home_screen.dart';
 import 'package:zappychat/screens/widgets/ai_message_card.dart';
@@ -60,7 +61,7 @@ class _AiScreenState extends State<AiScreen> {
 
 
   Future<String> _getAnswer(final String question) async {
-    const apiKey = 'AIzaSyC9FVFDzwA0Yw1D0jpp7AnW8Ie0qnayQl0'; // Replace with your actual Gemini API Key
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
     const modelName = 'models/gemini-2.0-flash';
     const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
