@@ -24,7 +24,7 @@ class APIs {
     final data = await supabase.from('users').select().eq('id', user.id);
     if (data.isNotEmpty) {
       me = ChatUser.fromJson(data[0]);
-      await updateActiveStatus(true);
+      updateActiveStatus(true);
       log('My data: $data');
     } else {
       await createUser().then((value) => getSelfInfo());
@@ -49,17 +49,15 @@ class APIs {
 
   // getting all users from firestore database
   static Stream<List<Map<String, dynamic>>> getAllUsers() {
-    return supabase
-        .from('users')
-        .stream(primaryKey: ['id'])
-        .neq('id', user.id);
+    return supabase.from('users').stream(primaryKey: ['id']).neq('id', user.id);
   }
 
   // update user info
   static Future<void> updateUserInfo() async {
     await supabase
         .from('users')
-        .update({'name': me.name, 'about': me.about}).eq('id', me.id);
+        .update({'name': me.name, 'about': me.about})
+        .eq('id', me.id);
   }
 
   // getting specific user info
@@ -70,13 +68,20 @@ class APIs {
         .eq('id', chatUser.id);
   }
 
+  static RealtimeChannel? channel;
+
   //update online or last active status
-  static Future<void> updateActiveStatus(bool isOnline) async {
-    await supabase.from('users').update({
-      'is_online': isOnline,
-      'last_active': DateTime.now().millisecondsSinceEpoch.toString(),
-      'push_token': me.pushToken
-    }).eq('id', user.id);
+  static void updateActiveStatus(bool isOnline) {
+    if (channel == null) {
+      channel = supabase.channel(
+        'online-users',
+        opts: const RealtimeChannelConfig(self: true),
+      );
+      channel!.subscribe();
+    }
+    channel!.track({
+      'online_at': isOnline ? DateTime.now().toIso8601String() : null,
+    });
   }
 
   // getting conversation id
@@ -94,7 +99,11 @@ class APIs {
   }
 
   // for sending msg
-  static Future<void> sendMessage(ChatUser chatUser, String msg, {Type type = Type.text}) async {
+  static Future<void> sendMessage(
+    ChatUser chatUser,
+    String msg, {
+    Type type = Type.text,
+  }) async {
     // msg sending time used as id
     final time = DateTime.now().millisecondsSinceEpoch.toString();
 
@@ -110,7 +119,10 @@ class APIs {
 
     await supabase
         .from('messages')
-        .insert(message.toJson()..['conversation_id'] = getConversationID(chatUser.id));
+        .insert(
+          message.toJson()
+            ..['conversation_id'] = getConversationID(chatUser.id),
+        );
   }
 
   // update read msg status
@@ -147,7 +159,9 @@ class APIs {
   static Future<String> uploadFile(File file, String path) async {
     try {
       final contentType = lookupMimeType(file.path);
-      await supabase.storage.from('chat-files').upload(
+      await supabase.storage
+          .from('chat-files')
+          .upload(
             path,
             file,
             fileOptions: FileOptions(contentType: contentType),

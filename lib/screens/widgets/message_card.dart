@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:zappychat/api/apis.dart';
 import 'package:zappychat/helper/dialogs.dart';
 import 'package:zappychat/helper/my_date_util.dart';
+import 'package:zappychat/screens/image_question_screen.dart';
 import '../../main.dart';
 import '../../models/message.dart';
 
@@ -33,151 +34,135 @@ class _MessageCardState extends State<MessageCard> {
       APIs.updateMessageReadStatus(widget.message);
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          child: Container(
-            padding: EdgeInsets.all(mq.width * 0.05),
-            margin: EdgeInsets.symmetric(
-              horizontal: mq.width * 0.05,
-              vertical: mq.height * 0.02,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF9FD1EDFF), Color(0xFF6DAFE6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 5,
-                  offset: Offset(2, 2),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
-              ],
+              ),
+              child: _buildMessageContent(),
             ),
-            child: widget.message.type == Type.text
-                ? Text(
-                    widget.message.msg,
-                    style: const TextStyle(color: Colors.black87, fontSize: 16),
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: FutureBuilder<String>(
-                      future: APIs.createSignedUrl(widget.message.msg),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        if (snapshot.hasError) {
-                          return const Icon(Icons.image, size: 70);
-                        }
-                        return CachedNetworkImage(
-                          imageUrl: snapshot.data!,
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.image, size: 70),
-                        );
-                      },
-                    ),
-                  ),
           ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(right: mq.width * 0.05),
-          child: Text(
+          const SizedBox(width: 8),
+          Text(
             MyDateUtil.getFormattedTime(
               context: context,
               time: widget.message.sent,
             ),
-            style: const TextStyle(fontSize: 13, color: Colors.black54),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _greenMessage() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            SizedBox(width: mq.width * 0.05),
-            if (widget.message.read.isNotEmpty)
-              const Icon(Icons.done_all_rounded, color: Colors.blue, size: 20),
-            SizedBox(width: mq.width * 0.02),
-            Text(
-              MyDateUtil.getFormattedTime(
-                context: context,
-                time: widget.message.sent,
-              ),
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (widget.message.read.isNotEmpty)
+            const Icon(Icons.done_all_rounded, color: Colors.blue, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            MyDateUtil.getFormattedTime(
+              context: context,
+              time: widget.message.sent,
             ),
-          ],
-        ),
-        Flexible(
-          child: Container(
-            padding: EdgeInsets.all(mq.width * 0.05),
-            margin: EdgeInsets.symmetric(
-              horizontal: mq.width * 0.05,
-              vertical: mq.height * 0.02,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.lightGreen.shade100,
-              border: Border.all(color: Colors.lightGreen),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(20),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 5,
-                  offset: Offset(2, 2),
-                ),
-              ],
-            ),
-            child: widget.message.type == Type.text
-                ? Text(
-                    widget.message.msg,
-                    style: const TextStyle(color: Colors.black87, fontSize: 16),
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    child: FutureBuilder<String>(
-                      future: APIs.createSignedUrl(widget.message.msg),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
-                        if (snapshot.hasError) {
-                          return const Icon(Icons.image, size: 70);
-                        }
-                        return CachedNetworkImage(
-                          imageUrl: snapshot.data!,
-                          placeholder: (context, url) =>
-                              const CircularProgressIndicator(),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.image, size: 70),
-                        );
-                      },
-                    ),
-                  ),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+              child: _buildMessageContent(),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildMessageContent() {
+    return widget.message.type == Type.text
+        ? Text(
+          widget.message.msg,
+          style: TextStyle(
+            color:
+                APIs.user.id == widget.message.fromId
+                    ? Colors.white
+                    : Colors.black,
+          ),
+        )
+        : ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              FutureBuilder<String>(
+                future: APIs.createSignedUrl(widget.message.msg),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  }
+                  if (snapshot.hasError) {
+                    return const Icon(Icons.image, size: 70);
+                  }
+                  return CachedNetworkImage(
+                    imageUrl: snapshot.data!,
+                    placeholder:
+                        (context, url) => const CircularProgressIndicator(),
+                    errorWidget:
+                        (context, url, error) =>
+                            const Icon(Icons.image, size: 70),
+                  );
+                },
+              ),
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: CircleAvatar(
+                  backgroundColor: Colors.white.withOpacity(0.8),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.question_answer_outlined,
+                      color: Colors.blue,
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (_) =>
+                                  ImageQuestionScreen(message: widget.message),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
   }
 
   void _showBottomSheet(bool isMe) {
@@ -248,14 +233,16 @@ class _MessageCardState extends State<MessageCard> {
               ),
             _OptionItem(
               icon: Icon(Icons.remove_red_eye, color: Colors.blue),
-              name: 'Send At: ${MyDateUtil.getMessageTime(context: context, lastTime: widget.message.sent)}',
+              name:
+                  'Send At: ${MyDateUtil.getMessageTime(context: context, lastTime: widget.message.sent)}',
               onTap: () {},
             ),
             _OptionItem(
               icon: Icon(Icons.remove_red_eye, color: Colors.green),
-              name: widget.message.read.isEmpty
-                  ? 'Read At: Not seen yet'
-                  : 'Read At: ${MyDateUtil.getMessageTime(context: context, lastTime: widget.message.read)}',
+              name:
+                  widget.message.read.isEmpty
+                      ? 'Read At: Not seen yet'
+                      : 'Read At: ${MyDateUtil.getMessageTime(context: context, lastTime: widget.message.read)}',
               onTap: () {},
             ),
           ],
@@ -269,54 +256,55 @@ class _MessageCardState extends State<MessageCard> {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        contentPadding: const EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 20,
-          bottom: 10,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: const [
-            Icon(Icons.message, color: Colors.blue, size: 28),
-            Text(' Updated Message'),
-          ],
-        ),
-        content: TextFormField(
-          initialValue: updatedMsg,
-          maxLines: null,
-          onChanged: (value) => updatedMsg = value,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
+      builder:
+          (_) => AlertDialog(
+            contentPadding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 20,
+              bottom: 10,
             ),
-          ),
-        ),
-        actions: [
-          MaterialButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.blue, fontSize: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ),
-          MaterialButton(
-            onPressed: () {
-              Navigator.pop(context);
-              APIs.updateMessage(widget.message, updatedMsg);
-            },
-            child: const Text(
-              'Update',
-              style: TextStyle(color: Colors.blue, fontSize: 16),
+            title: Row(
+              children: const [
+                Icon(Icons.message, color: Colors.blue, size: 28),
+                Text(' Updated Message'),
+              ],
             ),
+            content: TextFormField(
+              initialValue: updatedMsg,
+              maxLines: null,
+              onChanged: (value) => updatedMsg = value,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+              ),
+            ),
+            actions: [
+              MaterialButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.blue, fontSize: 16),
+                ),
+              ),
+              MaterialButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  APIs.updateMessage(widget.message, updatedMsg);
+                },
+                child: const Text(
+                  'Update',
+                  style: TextStyle(color: Colors.blue, fontSize: 16),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

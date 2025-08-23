@@ -4,6 +4,7 @@ import 'package:zappychat/providers/ai_providers.dart';
 import 'package:zappychat/screens/home_screen.dart';
 import 'package:zappychat/screens/widgets/ai_message_card.dart';
 import '../helper/dialogs.dart';
+import '../helper/theme.dart';
 import '../main.dart';
 
 class AiScreen extends ConsumerWidget {
@@ -41,8 +42,12 @@ class AiScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -54,7 +59,7 @@ class AiScreen extends ConsumerWidget {
             }
           },
         ),
-        title: const Text('ZappyBot'),
+        title: const Text('ZappyBot', style: TextStyle(color: Colors.white)),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Padding(
@@ -65,15 +70,28 @@ class AiScreen extends ConsumerWidget {
               child: TextFormField(
                 controller: textC,
                 textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white),
                 onTapOutside: (e) => FocusScope.of(context).unfocus(),
                 decoration: InputDecoration(
-                  fillColor: Theme.of(context).scaffoldBackgroundColor,
+                  fillColor: Colors.white.withOpacity(0.2),
                   filled: true,
                   isDense: true,
                   hintText: 'Ask me anything you want...',
-                  hintStyle: const TextStyle(fontSize: 14),
+                  hintStyle: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
                   border: const OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(50)),
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(50)),
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(50)),
+                    borderSide: BorderSide(color: Colors.white, width: 2),
                   ),
                 ),
               ),
@@ -81,7 +99,7 @@ class AiScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 24,
-              backgroundColor: Colors.blue,
+              backgroundColor: AppTheme.primaryColor,
               child: IconButton(
                 onPressed: askQuestion,
                 icon: const Icon(
@@ -94,11 +112,17 @@ class AiScreen extends ConsumerWidget {
           ],
         ),
       ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        controller: scrollC,
-        padding: EdgeInsets.only(top: mq.height * .02, bottom: mq.height * .1),
-        children: list.map((e) => AiMessageCard(message: e)).toList(),
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          controller: scrollC,
+          padding: EdgeInsets.only(
+            top: mq.height * .02,
+            bottom: mq.height * .1,
+          ),
+          children: list.map((e) => AiMessageCard(message: e)).toList(),
+        ),
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:zappychat/api/apis.dart';
+import 'package:zappychat/helper/theme.dart';
 import 'package:zappychat/screens/home_screen.dart';
 
 import '../../main.dart';
@@ -18,15 +20,13 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
-    WidgetsFlutterBinding.ensureInitialized();
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
       // Exit Full Screen
-      WidgetsFlutterBinding.ensureInitialized();
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-        statusBarColor: Colors.blueAccent
-      ));
+      SystemChrome.setSystemUIOverlayStyle(
+        const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
+      );
 
       if (APIs.supabase.auth.currentUser != null) {
         log('\nUser: ${APIs.supabase.auth.currentUser}');
@@ -48,33 +48,28 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     mq = MediaQuery.of(context).size;
     return Scaffold(
-      // app bar
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('Welcome to ZappyChat'),
-      ),
-      body: Stack(
-        children: [
-          Positioned(
-            top: mq.height * 0.15,
-            width: mq.width * 0.5,
-            right: mq.width * 0.25,
-            child: Image.asset('images/icon.png'),
-          ),
-          Positioned(
-            bottom: mq.height * 0.15,
-            width: mq.width,
-            child: const Text(
-              'MADE IN INDIA WITH ❤️',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-                letterSpacing: 0.5,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.asset(
+                'lottie/ai.json',
+                width: mq.width * 0.7,
+                fit: BoxFit.contain,
               ),
-            ),
+              const SizedBox(height: 24),
+              Text(
+                'ZappyChat',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

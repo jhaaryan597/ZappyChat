@@ -16,8 +16,11 @@ import 'package:zappychat/screens/home_screen.dart';
 import 'package:zappychat/screens/view_profile_screen.dart';
 import 'package:zappychat/screens/widgets/message_card.dart';
 import 'api/apis.dart';
+import 'helper/theme.dart';
 import 'main.dart';
 import 'models/message.dart';
+import 'providers/smart_reply_provider.dart';
+import 'providers/suggestion_provider.dart';
 
 class ChatScreen extends ConsumerWidget {
   final ChatUser user;
@@ -33,72 +36,114 @@ class ChatScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFE3F0FB),
         appBar: AppBar(
+          elevation: 0,
           automaticallyImplyLeading: false,
-          backgroundColor: Colors.blueAccent,
-          toolbarHeight: 80,
-          systemOverlayStyle: const SystemUiOverlayStyle(
-            statusBarColor: Colors.blueAccent,
-            statusBarIconBrightness: Brightness.light,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
           ),
-          title: SafeArea(child: AppBarContent(user: user)),
+          title: AppBarContent(user: user),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: messages.when(
-                data: (list) {
-                  if (list.isNotEmpty) {
-                    return ListView.builder(
-                      reverse: true,
-                      itemCount: list.length,
-                      padding: EdgeInsets.only(top: mq.height * 0.01),
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        return MessageCard(message: list[index]);
-                      },
-                    );
-                  } else {
-                    return const Center(
-                      child: Text(
-                        'Say Hii! 👋🏻',
-                        style: TextStyle(fontSize: 20),
-                      ),
-                    );
-                  }
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, stack) => Center(child: Text('Error: $error')),
+        body: Container(
+          decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+          child: Column(
+            children: [
+              Expanded(
+                child: messages.when(
+                  data: (list) {
+                    if (list.isNotEmpty) {
+                      return ListView.builder(
+                        reverse: true,
+                        itemCount: list.length,
+                        padding: EdgeInsets.only(top: mq.height * 0.01),
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          return MessageCard(message: list[index]);
+                        },
+                      );
+                    } else {
+                      return const Center(
+                        child: Text(
+                          'Say Hii! 👋🏻',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                      );
+                    }
+                  },
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) => Center(child: Text('Error: $error')),
+                ),
               ),
-            ),
-            ChatInput(user: user),
-            if (showEmoji)
-              SizedBox(
-                height: mq.height * 0.35,
-                child: EmojiPicker(
-                  textEditingController: textController,
-                  config: Config(
-                    emojiViewConfig: EmojiViewConfig(
-                      emojiSizeMax:
-                          28 *
-                          (foundation.defaultTargetPlatform ==
-                                  TargetPlatform.iOS
-                              ? 1.20
-                              : 1.0),
-                      backgroundColor: const Color(0xFFE3F0FB),
-                      columns: 8,
-                    ),
-                    categoryViewConfig: const CategoryViewConfig(),
-                    bottomActionBarConfig: const BottomActionBarConfig(
-                      enabled: true,
+              ChatInput(user: user, messages: messages.value ?? []),
+              if (showEmoji)
+                SizedBox(
+                  height: mq.height * 0.35,
+                  child: EmojiPicker(
+                    textEditingController: textController,
+                    config: Config(
+                      emojiViewConfig: EmojiViewConfig(
+                        emojiSizeMax:
+                            28 *
+                            (foundation.defaultTargetPlatform ==
+                                    TargetPlatform.iOS
+                                ? 1.20
+                                : 1.0),
+                        backgroundColor: const Color(0xFFE3F0FB),
+                        columns: 8,
+                      ),
+                      categoryViewConfig: const CategoryViewConfig(),
+                      bottomActionBarConfig: const BottomActionBarConfig(
+                        enabled: true,
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class SmartReply extends ConsumerWidget {
+  final List<Message> messages;
+  const SmartReply({super.key, required this.messages});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final smartReplies = ref.watch(smartReplyProvider(messages));
+    return smartReplies.when(
+      data: (replies) {
+        if (replies.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          height: 50,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: replies.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ActionChip(
+                  label: Text(
+                    replies[index],
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    ref.read(textControllerProvider).text = replies[index];
+                  },
+                  backgroundColor: AppTheme.primaryColor,
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 }
@@ -155,9 +200,9 @@ class AppBarContent extends ConsumerWidget {
                     Text(
                       chatUser.name,
                       style: const TextStyle(
-                        color: Colors.black87,
+                        color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -166,10 +211,14 @@ class AppBarContent extends ConsumerWidget {
                           ? 'Online'
                           : MyDateUtil.getLastActiveTime(
                             context: context,
-                            lastActive: chatUser.lastActive,
+                            lastActive:
+                                DateTime.tryParse(
+                                  chatUser.lastActive,
+                                )?.millisecondsSinceEpoch.toString() ??
+                                '',
                           ),
                       style: const TextStyle(
-                        color: Colors.black54,
+                        color: Colors.white70,
                         fontSize: 14,
                       ),
                     ),
@@ -184,29 +233,80 @@ class AppBarContent extends ConsumerWidget {
   }
 }
 
-class ChatInput extends ConsumerWidget {
+class ChatInput extends ConsumerStatefulWidget {
   final ChatUser user;
-  const ChatInput({super.key, required this.user});
+  final List<Message> messages;
+  const ChatInput({super.key, required this.user, required this.messages});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChatInput> createState() => _ChatInputState();
+}
+
+class _ChatInputState extends ConsumerState<ChatInput>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  File? _imageFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final textController = ref.watch(textControllerProvider);
     final showEmoji = ref.watch(showEmojiProvider);
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: mq.height * 0.01,
-        horizontal: mq.width * 0.025,
-      ),
+      padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
+          if (_imageFile != null)
+            Stack(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: FileImage(_imageFile!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _imageFile = null;
+                      });
+                    },
+                    child: const CircleAvatar(
+                      backgroundColor: Colors.black54,
+                      child: Icon(Icons.close, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           Row(
             children: [
               Expanded(
                 child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
                   child: Row(
                     children: [
                       IconButton(
@@ -215,26 +315,13 @@ class ChatInput extends ConsumerWidget {
                           ref.read(showEmojiProvider.notifier).state =
                               !showEmoji;
                         },
-                        icon: const Icon(
-                          Icons.emoji_emotions,
-                          color: Colors.blueAccent,
-                          size: 25,
-                        ),
+                        icon: const Icon(Icons.emoji_emotions_outlined),
                       ),
                       Expanded(
                         child: TextField(
                           controller: textController,
-                          keyboardType: TextInputType.multiline,
-                          maxLines: null,
-                          onTap: () {
-                            if (showEmoji) {
-                              ref.read(showEmojiProvider.notifier).state =
-                                  false;
-                            }
-                          },
                           decoration: const InputDecoration(
-                            hintText: 'Type Something...',
-                            hintStyle: TextStyle(color: Colors.blueAccent),
+                            hintText: 'Message',
                             border: InputBorder.none,
                           ),
                         ),
@@ -246,22 +333,12 @@ class ChatInput extends ConsumerWidget {
                             source: ImageSource.gallery,
                           );
                           if (image != null) {
-                            final imageUrl = await APIs.uploadFile(
-                              File(image.path),
-                              'images/${DateTime.now().millisecondsSinceEpoch}.${image.path.split('.').last}',
-                            );
-                            await APIs.sendMessage(
-                              user,
-                              imageUrl,
-                              type: Type.image,
-                            );
+                            setState(() {
+                              _imageFile = File(image.path);
+                            });
                           }
                         },
-                        icon: const Icon(
-                          Icons.image,
-                          color: Colors.blueAccent,
-                          size: 26,
-                        ),
+                        icon: const Icon(Icons.image_outlined),
                       ),
                       IconButton(
                         onPressed: () async {
@@ -270,49 +347,42 @@ class ChatInput extends ConsumerWidget {
                             source: ImageSource.camera,
                           );
                           if (image != null) {
-                            final imageUrl = await APIs.uploadFile(
-                              File(image.path),
-                              'images/${DateTime.now().millisecondsSinceEpoch}.${image.path.split('.').last}',
-                            );
-                            await APIs.sendMessage(
-                              user,
-                              imageUrl,
-                              type: Type.image,
-                            );
+                            setState(() {
+                              _imageFile = File(image.path);
+                            });
                           }
                         },
-                        icon: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Colors.blueAccent,
-                          size: 26,
-                        ),
+                        icon: const Icon(Icons.camera_alt_outlined),
                       ),
-                      SizedBox(width: mq.width * 0.02),
                     ],
                   ),
                 ),
               ),
-              MaterialButton(
-                onPressed: () {
-                  if (textController.text.trim().isNotEmpty) {
-                    APIs.sendMessage(user, textController.text.trim());
+              const SizedBox(width: 8),
+              FloatingActionButton(
+                onPressed: () async {
+                  if (_imageFile != null) {
+                    final imageUrl = await APIs.uploadFile(
+                      _imageFile!,
+                      'images/${DateTime.now().millisecondsSinceEpoch}.${_imageFile!.path.split('.').last}',
+                    );
+                    await APIs.sendMessage(
+                      widget.user,
+                      imageUrl,
+                      type: Type.image,
+                    );
+                    setState(() {
+                      _imageFile = null;
+                    });
+                  } else if (textController.text.trim().isNotEmpty) {
+                    APIs.sendMessage(widget.user, textController.text.trim());
                     textController.clear();
                   }
                 },
-                shape: const CircleBorder(),
-                minWidth: 0,
-                padding: const EdgeInsets.only(
-                  top: 10,
-                  bottom: 10,
-                  right: 5,
-                  left: 10,
-                ),
-                color: Colors.green,
-                child: const Icon(Icons.send, color: Colors.black87, size: 28),
+                child: const Icon(Icons.send),
               ),
             ],
           ),
-          const SizedBox(height: 15),
         ],
       ),
     );

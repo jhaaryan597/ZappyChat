@@ -1,10 +1,10 @@
 import 'dart:developer';
 
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart' as cupertino;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:zappychat/helper/theme.dart';
 import 'package:zappychat/providers/home_providers.dart';
 import 'package:zappychat/screens/auth/login_screen.dart';
 import 'package:zappychat/screens/profile_screen.dart';
@@ -14,11 +14,37 @@ import '../main.dart';
 import 'ai_screen.dart';
 import 'widgets/chat_user_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isSearching = ref.watch(isSearchingProvider);
     final searchedUsers = ref.watch(searchedUsersProvider);
     final selfInfo = ref.watch(selfInfoProvider);
@@ -41,27 +67,17 @@ class HomeScreen extends ConsumerWidget {
           (me) => GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             child: Scaffold(
-              backgroundColor: const Color(0xFFE3F0FB),
               appBar: AppBar(
-                leading: const Icon(CupertinoIcons.home),
-                title:
-                    isSearching
-                        ? TextField(
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'Name, Email, ...',
-                          ),
-                          style: const TextStyle(
-                            fontSize: 17,
-                            letterSpacing: 1,
-                            color: Colors.black54,
-                          ),
-                          autofocus: true,
-                          onChanged: (val) {
-                            ref.read(searchQueryProvider.notifier).state = val;
-                          },
-                        )
-                        : const Text('ZappyChat'),
+                elevation: 0,
+                flexibleSpace: Container(
+                  decoration: const BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                  ),
+                ),
+                title: const Text(
+                  'ZappyChat',
+                  style: TextStyle(color: Colors.white),
+                ),
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -71,8 +87,9 @@ class HomeScreen extends ConsumerWidget {
                     },
                     icon: Icon(
                       isSearching
-                          ? CupertinoIcons.clear_circled_solid
+                          ? cupertino.CupertinoIcons.clear_circled_solid
                           : Icons.search,
+                      color: Colors.white,
                     ),
                   ),
                   IconButton(
@@ -84,74 +101,99 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.more_vert),
+                    icon: const Icon(Icons.more_vert, color: Colors.white),
                   ),
                 ],
               ),
-              floatingActionButton: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FloatingActionButton(
-                    heroTag: 'ai_button',
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AiScreen(),
-                        ),
-                      );
-                    },
-                    backgroundColor: Colors.green,
-                    child: const Icon(Icons.android, color: Colors.white),
-                  ),
-                  const SizedBox(height: 10),
-                  FloatingActionButton(
-                    heroTag: 'logout_button',
-                    onPressed: () async {
-                      await APIs.supabase.auth.signOut();
-                      await GoogleSignIn().signOut();
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
-                    },
-                    backgroundColor: Colors.blueAccent,
-                    child: const Icon(
-                      Icons.add_comment_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AiScreen()),
+                  );
+                },
+                icon: const Icon(Icons.android),
+                label: const Text('Ask AI'),
               ),
-              body: ref
-                  .watch(allUsersProvider)
-                  .when(
-                    data: (users) {
-                      if (searchedUsers.isNotEmpty) {
-                        return ListView.builder(
-                          itemCount: searchedUsers.length,
-                          padding: EdgeInsets.only(top: mq.height * 0.01),
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            return ChatUserCard(user: searchedUsers[index]);
-                          },
-                        );
-                      } else {
-                        return const Center(
-                          child: Text(
-                            'No Connections Found!',
-                            style: TextStyle(fontSize: 20),
+              body: Container(
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                ),
+                child: Column(
+                  children: [
+                    if (isSearching)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            hintText: 'Search...',
+                            hintStyle: TextStyle(color: Colors.white70),
+                            prefixIcon: Icon(Icons.search, color: Colors.white),
+                            filled: true,
+                            fillColor: Colors.white24,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
+                              borderSide: BorderSide(color: Colors.white),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(12),
+                              ),
+                              borderSide: BorderSide(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                            ),
                           ),
-                        );
-                      }
-                    },
-                    loading:
-                        () => const Center(child: CircularProgressIndicator()),
-                    error:
-                        (error, stack) => Center(child: Text('Error: $error')),
-                  ),
+                          onChanged: (val) {
+                            ref.read(searchQueryProvider.notifier).state = val;
+                          },
+                        ),
+                      ),
+                    Expanded(
+                      child: ref
+                          .watch(allUsersProvider)
+                          .when(
+                            data: (users) {
+                              if (searchedUsers.isNotEmpty) {
+                                return ListView.builder(
+                                  itemCount: searchedUsers.length,
+                                  itemBuilder: (context, index) {
+                                    return FadeTransition(
+                                      opacity: _animation,
+                                      child: ChatUserCard(
+                                        user: searchedUsers[index],
+                                      ),
+                                    );
+                                  },
+                                );
+                              } else {
+                                return const Center(
+                                  child: Text('No users found'),
+                                );
+                              }
+                            },
+                            loading:
+                                () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                            error:
+                                (error, stack) =>
+                                    Center(child: Text('Error: $error')),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
       loading: () => const Center(child: CircularProgressIndicator()),

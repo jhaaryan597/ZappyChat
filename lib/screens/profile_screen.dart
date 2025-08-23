@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zappychat/helper/dialogs.dart';
@@ -13,6 +12,7 @@ import 'package:zappychat/providers/profile_providers.dart';
 import 'package:zappychat/screens/auth/login_screen.dart';
 
 import '../api/apis.dart';
+import '../helper/theme.dart';
 import '../main.dart';
 import '../models/chat_user.dart';
 
@@ -104,14 +104,19 @@ class ProfileScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Profile Screen')),
+        appBar: AppBar(
+          elevation: 0,
+          title: const Text('Profile Screen'),
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+          ),
+        ),
         floatingActionButton: FloatingActionButton.extended(
           heroTag: 'profile_logout_button',
           onPressed: () async {
             Dialogs.showProgressBar(context);
-            await APIs.updateActiveStatus(false);
+            APIs.updateActiveStatus(false);
             await Supabase.instance.client.auth.signOut();
-            await GoogleSignIn().signOut();
             Navigator.pop(context); // for progress dialog
             Navigator.pop(context); // for profile screen
             Navigator.pushReplacement(
@@ -123,124 +128,173 @@ class ProfileScreen extends ConsumerWidget {
           icon: const Icon(Icons.logout, color: Colors.white),
           label: const Text('Logout', style: TextStyle(color: Colors.white)),
         ),
-        body: Form(
-          key: formKey,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  SizedBox(width: mq.width, height: mq.height * 0.03),
-                  Stack(
-                    children: [
-                      image != null
-                          ? ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              mq.height * 0.1,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+          child: Form(
+            key: formKey,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: mq.width * 0.05),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(width: mq.width, height: mq.height * 0.03),
+                    Stack(
+                      children: [
+                        image != null
+                            ? ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                mq.height * 0.1,
+                              ),
+                              child: Image.file(
+                                File(image),
+                                width: mq.height * 0.2,
+                                height: mq.height * 0.2,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                            : ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                mq.height * 0.1,
+                              ),
+                              child: CachedNetworkImage(
+                                width: mq.height * 0.2,
+                                height: mq.height * 0.2,
+                                fit: BoxFit.fill,
+                                imageUrl: userState.image,
+                                errorWidget:
+                                    (context, url, error) => const CircleAvatar(
+                                      child: Icon(CupertinoIcons.person),
+                                    ),
+                              ),
                             ),
-                            child: Image.file(
-                              File(image),
-                              width: mq.height * 0.2,
-                              height: mq.height * 0.2,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                          : ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              mq.height * 0.1,
-                            ),
-                            child: CachedNetworkImage(
-                              width: mq.height * 0.2,
-                              height: mq.height * 0.2,
-                              fit: BoxFit.fill,
-                              imageUrl: userState.image,
-                              errorWidget:
-                                  (context, url, error) => const CircleAvatar(
-                                    child: Icon(CupertinoIcons.person),
-                                  ),
-                            ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: MaterialButton(
+                            elevation: 1,
+                            onPressed: showBottomSheet,
+                            shape: const CircleBorder(),
+                            color: Colors.white,
+                            child: const Icon(Icons.edit, color: Colors.blue),
                           ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: MaterialButton(
-                          elevation: 1,
-                          onPressed: showBottomSheet,
-                          shape: const CircleBorder(),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: mq.height * 0.03),
+                    Text(
+                      userState.email,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                    SizedBox(height: mq.height * 0.05),
+                    TextFormField(
+                      initialValue: userState.name,
+                      style: const TextStyle(color: Colors.white),
+                      onSaved:
+                          (val) => ref
+                              .read(userProvider.notifier)
+                              .updateName(val ?? ''),
+                      validator:
+                          (val) =>
+                              val != null && val.isNotEmpty
+                                  ? null
+                                  : 'Required Field',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.person,
                           color: Colors.white,
-                          child: const Icon(Icons.edit, color: Colors.blue),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        hintText: 'eg. Ayush Ravi',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        label: const Text(
+                          'Name',
+                          style: TextStyle(color: Colors.white),
                         ),
                       ),
-                    ],
-                  ),
-                  SizedBox(height: mq.height * 0.03),
-                  Text(
-                    userState.email,
-                    style: const TextStyle(color: Colors.black54, fontSize: 16),
-                  ),
-                  SizedBox(height: mq.height * 0.05),
-                  TextFormField(
-                    initialValue: userState.name,
-                    onSaved:
-                        (val) => ref
-                            .read(userProvider.notifier)
-                            .updateName(val ?? ''),
-                    validator:
-                        (val) =>
-                            val != null && val.isNotEmpty
-                                ? null
-                                : 'Required Field',
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.person, color: Colors.blue),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      hintText: 'eg. Ayush Ravi',
-                      label: const Text('Name'),
                     ),
-                  ),
-                  SizedBox(height: mq.height * 0.02),
-                  TextFormField(
-                    initialValue: userState.about,
-                    onSaved:
-                        (val) => ref
-                            .read(userProvider.notifier)
-                            .updateAbout(val ?? ''),
-                    validator:
-                        (val) =>
-                            val != null && val.isNotEmpty
-                                ? null
-                                : 'Required Field',
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(
-                        Icons.info_outline,
-                        color: Colors.blue,
+                    SizedBox(height: mq.height * 0.02),
+                    TextFormField(
+                      initialValue: userState.about,
+                      style: const TextStyle(color: Colors.white),
+                      onSaved:
+                          (val) => ref
+                              .read(userProvider.notifier)
+                              .updateAbout(val ?? ''),
+                      validator:
+                          (val) =>
+                              val != null && val.isNotEmpty
+                                  ? null
+                                  : 'Required Field',
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                        hintText: 'eg. Feeling Happy',
+                        hintStyle: const TextStyle(color: Colors.white70),
+                        label: const Text(
+                          'About',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      hintText: 'eg. Feeling Happy',
-                      label: const Text('About'),
                     ),
-                  ),
-                  SizedBox(height: mq.height * 0.05),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      if (formKey.currentState!.validate()) {
-                        formKey.currentState!.save();
-                        APIs.me = userState; // Update the static instance
-                        APIs.updateUserInfo().then((value) {
-                          Dialogs.showSnackbar(
-                            context,
-                            'Profile Updated Successfully!',
-                          );
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text('UPDATE', style: TextStyle(fontSize: 16)),
-                  ),
-                ],
+                    SizedBox(height: mq.height * 0.05),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          formKey.currentState!.save();
+                          APIs.me = userState; // Update the static instance
+                          APIs.updateUserInfo().then((value) {
+                            Dialogs.showSnackbar(
+                              context,
+                              'Profile Updated Successfully!',
+                            );
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.edit),
+                      label: const Text(
+                        'UPDATE',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

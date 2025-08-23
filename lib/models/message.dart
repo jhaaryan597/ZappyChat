@@ -14,7 +14,7 @@ class Message {
   late final String sent;
   late final String fromId;
 
-  Message.fromJson(Map<String, dynamic> json){
+  Message.fromJson(Map<String, dynamic> json) {
     msg = json['msg'].toString();
     read = json['read'].toString();
     told = json['told'].toString();
@@ -31,11 +31,11 @@ class Message {
     data['type'] = type.name;
     data['sent'] = sent;
     data['fromId'] = fromId;
-    return  data;
+    return data;
   }
 }
 
-enum Type { text, image}
+enum Type { text, image, imageQuestion }
 
 // ai message
 class AiMessage {

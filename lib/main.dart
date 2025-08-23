@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'helper/theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/splash_screen.dart';
 
@@ -46,19 +47,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'ZappyChat',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 1,
-          iconTheme: IconThemeData(color: Colors.white, size: 25),
-          titleTextStyle: TextStyle(
-            color: Colors.white,
-            fontSize: 25,
-            fontWeight: FontWeight.w500,
-          ),
-          backgroundColor: Colors.blueAccent,
-        ),
-      ),
+      theme: AppTheme.theme,
       home: const SplashScreen(),
     );
   }
