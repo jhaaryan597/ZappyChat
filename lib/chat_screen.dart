@@ -7,9 +7,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:zappychat/helper/my_date_util.dart';
 import 'package:zappychat/models/chat_user.dart';
+import 'package:zappychat/providers/chat_providers.dart';
 import 'package:zappychat/screens/home_screen.dart';
 import 'package:zappychat/screens/view_profile_screen.dart';
 import 'package:zappychat/screens/widgets/message_card.dart';
@@ -17,95 +19,65 @@ import 'api/apis.dart';
 import 'main.dart';
 import 'models/message.dart';
 
-class ChatScreen extends StatefulWidget {
+class ChatScreen extends ConsumerWidget {
   final ChatUser user;
   const ChatScreen({super.key, required this.user});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textController = ref.watch(textControllerProvider);
+    final showEmoji = ref.watch(showEmojiProvider);
+    final messages = ref.watch(messagesProvider(user));
+    final userInfo = ref.watch(userInfoProvider(user));
 
-class _ChatScreenState extends State<ChatScreen> {
-  // storing all msg
-  List<Message> _list = [];
-
-  // handle msg text change
-  final _textController = TextEditingController();
-
-  // for storing value of showing or hiding emoji
-  bool _showEmoji = false;
-
-  @override
-  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: Color(0xFFE3F0FB), // ✅ optional, makes it clean
+        backgroundColor: const Color(0xFFE3F0FB),
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          backgroundColor: Colors.blueAccent, // ✅ set AppBar color
-          toolbarHeight: 80, // ✅ optional height tweak
+          backgroundColor: Colors.blueAccent,
+          toolbarHeight: 80,
           systemOverlayStyle: const SystemUiOverlayStyle(
-            statusBarColor: Colors.blueAccent, // ✅ this fixes status bar color
-            statusBarIconBrightness:
-                Brightness.light, // ✅ light icons on dark bg
+            statusBarColor: Colors.blueAccent,
+            statusBarIconBrightness: Brightness.light,
           ),
-          title: SafeArea(
-            child: _appBar(),
-          ), // ✅ put SafeArea inside AppBar title
+          title: SafeArea(child: AppBarContent(user: user)),
         ),
-
         body: Column(
           children: [
             Expanded(
-              child: StreamBuilder(
-                stream: APIs.getAllMessages(widget.user),
-                builder: (context, snapshot) {
-                  switch (snapshot.connectionState) {
-                    // if data is loading
-                    case ConnectionState.waiting:
-                    case ConnectionState.none:
-                      return const SizedBox();
-                    // If some or all data is loaded then how it
-                    case ConnectionState.active:
-                    case ConnectionState.done:
-                      final data = snapshot.data;
-                      _list =
-                          data
-                              ?.map((e) => Message.fromJson(e))
-                              .toList() ??
-                          [];
-
-                      if (_list.isNotEmpty) {
-                        return ListView.builder(
-                          reverse: true,
-                          itemCount: _list.length,
-                          padding: EdgeInsets.only(top: mq.height * 0.01),
-                          physics: BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            return MessageCard(message: _list[index]);
-                          },
-                        );
-                      } else {
-                        return const Center(
-                          child: Text(
-                            'Say Hii! 👋🏻',
-                            style: TextStyle(fontSize: 20),
-                          ),
-                        );
-                      }
+              child: messages.when(
+                data: (list) {
+                  if (list.isNotEmpty) {
+                    return ListView.builder(
+                      reverse: true,
+                      itemCount: list.length,
+                      padding: EdgeInsets.only(top: mq.height * 0.01),
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        return MessageCard(message: list[index]);
+                      },
+                    );
+                  } else {
+                    return const Center(
+                      child: Text(
+                        'Say Hii! 👋🏻',
+                        style: TextStyle(fontSize: 20),
+                      ),
+                    );
                   }
                 },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stack) => Center(child: Text('Error: $error')),
               ),
             ),
-            _chatInput(),
-
-            //show emoji on keyboard emoji btn
-            if (_showEmoji)
+            ChatInput(user: user),
+            if (showEmoji)
               SizedBox(
                 height: mq.height * 0.35,
                 child: EmojiPicker(
-                  textEditingController: _textController,
+                  textEditingController: textController,
                   config: Config(
                     emojiViewConfig: EmojiViewConfig(
                       emojiSizeMax:
@@ -114,112 +86,113 @@ class _ChatScreenState extends State<ChatScreen> {
                                   TargetPlatform.iOS
                               ? 1.20
                               : 1.0),
-                      backgroundColor: Color(0xFFE3F0FB),
+                      backgroundColor: const Color(0xFFE3F0FB),
                       columns: 8,
                     ),
-                    categoryViewConfig:
-                        CategoryViewConfig(), // default config (no params)
-                    bottomActionBarConfig: BottomActionBarConfig(
-                      enabled: true, // just enables bottom action bar
+                    categoryViewConfig: const CategoryViewConfig(),
+                    bottomActionBarConfig: const BottomActionBarConfig(
+                      enabled: true,
                     ),
                   ),
                 ),
               ),
           ],
-        ), // ✅ your chat body goes here
+        ),
       ),
     );
   }
+}
 
-  Widget _appBar() {
+class AppBarContent extends ConsumerWidget {
+  final ChatUser user;
+  const AppBarContent({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userInfo = ref.watch(userInfoProvider(user));
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ViewProfileScreen(user: widget.user),
-          ),
+          MaterialPageRoute(builder: (_) => ViewProfileScreen(user: user)),
         );
       },
-      child: StreamBuilder(
-        stream: APIs.getUserInfo(widget.user),
-        builder: (context, snapshot) {
-          final data = snapshot.data;
-          final list =
-              data?.map((e) => ChatUser.fromJson(e)).toList() ?? [];
-
-          return Row(
-            children: [
-              // back btn
-              IconButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => HomeScreen()),
-                  ); // ✅ optional back
-                },
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: Colors.white,
-                ), // ✅ white icon
-              ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(mq.height * 0.03),
-                child: CachedNetworkImage(
-                  width: mq.height * 0.05,
-                  height: mq.height * 0.05,
-                  fit: BoxFit.fill,
-                  placeholder:
-                      (context, url) => Image.network(
-                        '${widget.user.image}', // 👈 fallback image while loading
-                        fit: BoxFit.cover,
-                      ),
-                  imageUrl: list.isNotEmpty ? list[0].image : widget.user.image,
-                  errorWidget:
-                      (context, url, error) => const CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: Icon(CupertinoIcons.person, color: Colors.white),
-                      ),
+      child: userInfo.when(
+        data:
+            (chatUser) => Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
-              ),
-              SizedBox(width: mq.width * 0.02),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    list.isNotEmpty ? list[0].name : widget.user.name,
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    list.isNotEmpty
-                        ? list[0].isOnline
-                            ? 'Online'
-                            : MyDateUtil.getLastActiveTime(
-                              context: context,
-                              lastActive: list[0].lastActive,
-                            )
-                        : MyDateUtil.getLastActiveTime(
-                          context: context,
-                          lastActive: widget.user.lastActive,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(mq.height * 0.03),
+                  child: CachedNetworkImage(
+                    width: mq.height * 0.05,
+                    height: mq.height * 0.05,
+                    fit: BoxFit.fill,
+                    imageUrl: chatUser.image,
+                    errorWidget:
+                        (context, url, error) => const CircleAvatar(
+                          backgroundColor: Colors.blue,
+                          child: Icon(
+                            CupertinoIcons.person,
+                            color: Colors.white,
+                          ),
                         ),
-                    style: const TextStyle(color: Colors.black54, fontSize: 14),
                   ),
-                ],
-              ),
-            ],
-          );
-        },
+                ),
+                SizedBox(width: mq.width * 0.02),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chatUser.name,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      chatUser.isOnline
+                          ? 'Online'
+                          : MyDateUtil.getLastActiveTime(
+                            context: context,
+                            lastActive: chatUser.lastActive,
+                          ),
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+        loading: () => const CircularProgressIndicator(),
+        error: (error, stack) => const Text('Error'),
       ),
     );
   }
+}
 
-  Widget _chatInput() {
+class ChatInput extends ConsumerWidget {
+  final ChatUser user;
+  const ChatInput({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final textController = ref.watch(textControllerProvider);
+    final showEmoji = ref.watch(showEmojiProvider);
+
     return Padding(
       padding: EdgeInsets.symmetric(
         vertical: mq.height * 0.01,
@@ -228,7 +201,6 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Column(
         children: [
           Row(
-            // msg sender
             children: [
               Expanded(
                 child: Card(
@@ -237,13 +209,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   child: Row(
                     children: [
-                      // emoji btn
                       IconButton(
                         onPressed: () {
                           FocusScope.of(context).unfocus();
-                          setState(() {
-                            _showEmoji = !_showEmoji;
-                          });
+                          ref.read(showEmojiProvider.notifier).state =
+                              !showEmoji;
                         },
                         icon: const Icon(
                           Icons.emoji_emotions,
@@ -253,14 +223,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       Expanded(
                         child: TextField(
-                          controller: _textController,
+                          controller: textController,
                           keyboardType: TextInputType.multiline,
                           maxLines: null,
                           onTap: () {
-                            if (_showEmoji)
-                              setState(() {
-                                _showEmoji = !_showEmoji;
-                              });
+                            if (showEmoji) {
+                              ref.read(showEmojiProvider.notifier).state =
+                                  false;
+                            }
                           },
                           decoration: const InputDecoration(
                             hintText: 'Type Something...',
@@ -272,19 +242,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       IconButton(
                         onPressed: () async {
                           final ImagePicker picker = ImagePicker();
-                          // pick an image
                           final XFile? image = await picker.pickImage(
                             source: ImageSource.gallery,
                           );
                           if (image != null) {
-                            log(
-                              'Image Path: ${image.path} -- MimeType: ${image.mimeType}',
-                            );
                             final imageUrl = await APIs.uploadFile(
                               File(image.path),
                               'images/${DateTime.now().millisecondsSinceEpoch}.${image.path.split('.').last}',
                             );
-                            await APIs.sendMessage(widget.user, imageUrl, type: Type.image);
+                            await APIs.sendMessage(
+                              user,
+                              imageUrl,
+                              type: Type.image,
+                            );
                           }
                         },
                         icon: const Icon(
@@ -296,17 +266,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       IconButton(
                         onPressed: () async {
                           final ImagePicker picker = ImagePicker();
-                          // pick an image
                           final XFile? image = await picker.pickImage(
                             source: ImageSource.camera,
                           );
                           if (image != null) {
-                            log('Image Path: ${image.path}');
                             final imageUrl = await APIs.uploadFile(
                               File(image.path),
                               'images/${DateTime.now().millisecondsSinceEpoch}.${image.path.split('.').last}',
                             );
-                            await APIs.sendMessage(widget.user, imageUrl, type: Type.image);
+                            await APIs.sendMessage(
+                              user,
+                              imageUrl,
+                              type: Type.image,
+                            );
                           }
                         },
                         icon: const Icon(
@@ -322,30 +294,25 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               MaterialButton(
                 onPressed: () {
-                  if (_textController.text.trim().isNotEmpty) {
-                    APIs.sendMessage(widget.user, _textController.text.trim());
-                    _textController.clear();
+                  if (textController.text.trim().isNotEmpty) {
+                    APIs.sendMessage(user, textController.text.trim());
+                    textController.clear();
                   }
-
-                  // if(_textController.text.isNotEmpty){
-                  //   APIs.sendMessage(widget.user, _textController.text);
-                  //   _textController.text = '';
-                  // }
                 },
-                shape: CircleBorder(),
+                shape: const CircleBorder(),
                 minWidth: 0,
-                padding: EdgeInsets.only(
+                padding: const EdgeInsets.only(
                   top: 10,
                   bottom: 10,
                   right: 5,
                   left: 10,
                 ),
                 color: Colors.green,
-                child: Icon(Icons.send, color: Colors.black87, size: 28),
+                child: const Icon(Icons.send, color: Colors.black87, size: 28),
               ),
             ],
           ),
-          SizedBox(height: 15),
+          const SizedBox(height: 15),
         ],
       ),
     );

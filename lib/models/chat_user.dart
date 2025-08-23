@@ -45,4 +45,28 @@ class ChatUser {
     data['push_token'] = pushToken;
     return data;
   }
+
+  ChatUser copyWith({
+    String? image,
+    String? name,
+    String? about,
+    String? createdAt,
+    String? lastActive,
+    bool? isOnline,
+    String? id,
+    String? email,
+    String? pushToken,
+  }) {
+    return ChatUser(
+      image: image ?? this.image,
+      name: name ?? this.name,
+      about: about ?? this.about,
+      createdAt: createdAt ?? this.createdAt,
+      lastActive: lastActive ?? this.lastActive,
+      isOnline: isOnline ?? this.isOnline,
+      id: id ?? this.id,
+      email: email ?? this.email,
+      pushToken: pushToken ?? this.pushToken,
+    );
+  }
 }
