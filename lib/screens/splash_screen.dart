@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:zappychat/api/apis.dart';
@@ -18,30 +21,49 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  late StreamSubscription<AuthState> _authSubscription;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      // Exit Full Screen
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-      );
-
-      if (APIs.supabase.auth.currentUser != null) {
-        log('\nUser: ${APIs.supabase.auth.currentUser}');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      } else {
-        // Login Screen pr ja
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
+    _authSubscription = APIs.supabase.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      if (event == AuthChangeEvent.signedIn) {
+        _redirect(const HomeScreen());
+      } else if (event == AuthChangeEvent.signedOut) {
+        _redirect(const LoginScreen());
       }
     });
+
+    // Initial check
+    final session = APIs.supabase.auth.currentSession;
+    if (session != null && !session.isExpired) {
+      _redirect(const HomeScreen());
+    } else {
+      // Failsafe: Actively sign out to clear any invalid session data
+      APIs.supabase.auth.signOut(scope: SignOutScope.global);
+      GoogleSignIn().signOut();
+      // Adding a small delay to show splash screen
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) _redirect(const LoginScreen());
+      });
+    }
+  }
+
+  void _redirect(Widget screen) {
+    Future.delayed(Duration.zero, () {
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => screen));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
   }
 
   @override

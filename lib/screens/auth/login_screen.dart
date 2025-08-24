@@ -53,9 +53,6 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // update the user reference in APIs class
-      APIs.me.id = authResponse.user!.id;
-
       if (await APIs.userExists()) {
         Navigator.pop(context);
         Navigator.pushReplacement(

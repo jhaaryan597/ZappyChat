@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart' as cupertino;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zappychat/helper/theme.dart';
 import 'package:zappychat/providers/home_providers.dart';
 import 'package:zappychat/screens/auth/login_screen.dart';
@@ -102,6 +104,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       );
                     },
                     icon: const Icon(Icons.more_vert, color: Colors.white),
+                  ),
+
+                  //add a sign out button
+                  IconButton(
+                    onPressed: () async {
+                      await APIs.supabase.auth.signOut(
+                        scope: SignOutScope.global,
+                      );
+                      await GoogleSignIn().signOut();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
+                    icon: const Icon(Icons.logout, color: Colors.white),
                   ),
                 ],
               ),
