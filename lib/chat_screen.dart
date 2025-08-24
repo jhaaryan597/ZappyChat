@@ -167,12 +167,7 @@ class AppBarContent extends ConsumerWidget {
             (chatUser) => Row(
               children: [
                 IconButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    );
-                  },
+                  onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                 ),
                 ClipRRect(
