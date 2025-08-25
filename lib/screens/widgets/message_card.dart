@@ -137,29 +137,6 @@ class _MessageCardState extends State<MessageCard> {
                   );
                 },
               ),
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white.withOpacity(0.8),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.question_answer_outlined,
-                      color: Colors.blue,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) =>
-                                  ImageQuestionScreen(message: widget.message),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
             ],
           ),
         );

@@ -26,28 +26,30 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _authSubscription = APIs.supabase.auth.onAuthStateChange.listen((data) {
-      final AuthChangeEvent event = data.event;
-      if (event == AuthChangeEvent.signedIn) {
+    Future.delayed(const Duration(seconds: 2), () {
+      _authSubscription = APIs.supabase.auth.onAuthStateChange.listen((data) {
+        final AuthChangeEvent event = data.event;
+        if (event == AuthChangeEvent.signedIn) {
+          _redirect(const HomeScreen());
+        } else if (event == AuthChangeEvent.signedOut) {
+          _redirect(const LoginScreen());
+        }
+      });
+
+      // Initial check
+      final session = APIs.supabase.auth.currentSession;
+      if (session != null && !session.isExpired) {
         _redirect(const HomeScreen());
-      } else if (event == AuthChangeEvent.signedOut) {
-        _redirect(const LoginScreen());
+      } else {
+        // Failsafe: Actively sign out to clear any invalid session data
+        APIs.supabase.auth.signOut(scope: SignOutScope.global);
+        GoogleSignIn().signOut();
+        // Adding a small delay to show splash screen
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) _redirect(const LoginScreen());
+        });
       }
     });
-
-    // Initial check
-    final session = APIs.supabase.auth.currentSession;
-    if (session != null && !session.isExpired) {
-      _redirect(const HomeScreen());
-    } else {
-      // Failsafe: Actively sign out to clear any invalid session data
-      APIs.supabase.auth.signOut(scope: SignOutScope.global);
-      GoogleSignIn().signOut();
-      // Adding a small delay to show splash screen
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) _redirect(const LoginScreen());
-      });
-    }
   }
 
   void _redirect(Widget screen) {
