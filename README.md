@@ -39,15 +39,15 @@ Users can sign in with Google, find other users by email, and engage in real-tim
 **Actual app looks even better in action!** 😍  
 
 <p align="center">
-  <img src="ZappyChat/images/ss1.png" width="250"/>
-  <img src="ZappyChat/images/ss2.png" width="250"/>
-  <img src="ZappyChat/images/ss3.png" width="250"/>
-  <img src="ZappyChat/images/ss4.png" width="250"/>
+  <img src="images/ss1.png" width="250"/>
+  <img src="images/ss2.png" width="250"/>
+  <img src="images/ss3.png" width="250"/>
+  <img src="images/ss4.png" width="250"/>
   <br/>
-  <img src="ZappyChat/images/ss5.png" width="250"/>
-  <img src="ZappyChat/images/ss6.png" width="250"/>
-  <img src="ZappyChat/images/ss7.png" width="250"/>
-  <img src="ZappyChat/images/ss8.png" width="250"/>
+  <img src="images/ss5.png" width="250"/>
+  <img src="images/ss6.png" width="250"/>
+  <img src="images/ss7.png" width="250"/>
+  <img src="images/ss8.png" width="250"/>
 </p>
 
 ---
