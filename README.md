@@ -96,3 +96,10 @@ Users can sign in with Google, find other users by email, and engage in real-tim
 
 - **Latest Release APK:**  
   [Download APK](https://drive.google.com/file/d/1WbCGODOEX9FYstzoBMumpdLQyU-wZKY-/view?usp=sharing) (~62.4 MB)
+
+---
+
+## 💬 Feedback & Contact
+
+- We’d love to hear your feedback or suggestions! Reach out via email:
+- 📧 aryanjha230705@gmail.com
