@@ -82,3 +82,17 @@ Users can sign in with Google, find other users by email, and engage in real-tim
 
 ## 📂 Project Structure
 
+lib/
+ ┣ api/           # Supabase API integration
+ ┣ models/        # Data models (ChatUser, Message, etc.)
+ ┣ providers/     # Riverpod state management
+ ┣ screens/       # UI screens (auth, main, profile, widgets)
+ ┣ helper/        # Utility classes (date formatting, theme)
+assets/           # Static assets like images and Lottie animations
+
+---
+
+## 📦 APK Download
+
+- **Latest Release APK:**  
+  [Download APK](https://drive.google.com/file/d/1WbCGODOEX9FYstzoBMumpdLQyU-wZKY-/view?usp=sharing) (~62.4 MB)
