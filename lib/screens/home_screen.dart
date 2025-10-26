@@ -8,11 +8,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zappychat/helper/theme.dart';
 import 'package:zappychat/providers/home_providers.dart';
+import 'package:zappychat/providers/profile_providers.dart';
 import 'package:zappychat/screens/auth/login_screen.dart';
 import 'package:zappychat/screens/profile_screen.dart';
 
 import '../api/apis.dart';
-import '../main.dart';
 import 'ai_screen.dart';
 import 'widgets/chat_user_card.dart';
 
@@ -113,6 +113,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         scope: SignOutScope.global,
                       );
                       await GoogleSignIn().signOut();
+                      // Invalidate cached providers to avoid stale state after account switch
+                      ref.invalidate(selfInfoProvider);
+                      ref.invalidate(allUsersProvider);
+                      // profile user provider may exist if profile screen was opened
+                      // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
+                      ref.invalidate(userProvider);
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (_) => const LoginScreen()),

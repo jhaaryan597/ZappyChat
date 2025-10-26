@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:zappychat/api/apis.dart';
 import 'package:zappychat/helper/dialogs.dart';
 import 'package:zappychat/helper/my_date_util.dart';
-import 'package:zappychat/screens/image_question_screen.dart';
 import '../../main.dart';
 import '../../models/message.dart';
 
@@ -35,7 +34,7 @@ class _MessageCardState extends State<MessageCard> {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -68,7 +67,7 @@ class _MessageCardState extends State<MessageCard> {
 
   Widget _greenMessage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [

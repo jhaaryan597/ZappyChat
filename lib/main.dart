@@ -27,7 +27,7 @@ void main() async {
   );
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.edgeToEdge,
-  ); // ✅ Must be first
+  );
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

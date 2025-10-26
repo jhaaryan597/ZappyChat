@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,13 +5,11 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:zappychat/helper/my_date_util.dart';
 import 'package:zappychat/models/chat_user.dart';
 import 'package:zappychat/providers/chat_providers.dart';
-import 'package:zappychat/screens/home_screen.dart';
 import 'package:zappychat/screens/view_profile_screen.dart';
 import 'package:zappychat/screens/widgets/message_card.dart';
 import 'api/apis.dart';
@@ -20,7 +17,6 @@ import 'helper/theme.dart';
 import 'main.dart';
 import 'models/message.dart';
 import 'providers/smart_reply_provider.dart';
-import 'providers/suggestion_provider.dart';
 
 class ChatScreen extends ConsumerWidget {
   final ChatUser user;
@@ -31,7 +27,6 @@ class ChatScreen extends ConsumerWidget {
     final textController = ref.watch(textControllerProvider);
     final showEmoji = ref.watch(showEmojiProvider);
     final messages = ref.watch(messagesProvider(user));
-    final userInfo = ref.watch(userInfoProvider(user));
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -241,7 +236,8 @@ class _ChatInputState extends ConsumerState<ChatInput>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   File? _imageFile;
-
+  bool _isImgPicked = false; // guards gallery/camera taps during pick
+  bool _isSendingMessage = false; // guards send FAB to prevent double sends
   @override
   void initState() {
     super.initState();
@@ -262,123 +258,170 @@ class _ChatInputState extends ConsumerState<ChatInput>
     final textController = ref.watch(textControllerProvider);
     final showEmoji = ref.watch(showEmojiProvider);
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        children: [
-          if (_imageFile != null)
-            Stack(
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            if (_imageFile != null)
+              Stack(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: FileImage(_imageFile!),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _imageFile = null;
+                        });
+                      },
+                      child: const CircleAvatar(
+                        backgroundColor: Colors.black54,
+                        child: Icon(Icons.close, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            Row(
               children: [
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  height: 150,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    image: DecorationImage(
-                      image: FileImage(_imageFile!),
-                      fit: BoxFit.cover,
+                Expanded(
+                  child: Card(
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            FocusScope.of(context).unfocus();
+                            ref.read(showEmojiProvider.notifier).state =
+                                !showEmoji;
+                          },
+                          icon: const Icon(Icons.emoji_emotions_outlined),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: textController,
+                            decoration: const InputDecoration(
+                              hintText: 'Message',
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _isImgPicked
+                              ? null
+                              : () async {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _isImgPicked = true;
+                                  });
+                                  try {
+                                    final ImagePicker picker = ImagePicker();
+                                    final XFile? image = await picker
+                                        .pickImage(source: ImageSource.gallery);
+                                    if (image != null && mounted) {
+                                      setState(() {
+                                        _imageFile = File(image.path);
+                                      });
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isImgPicked = false;
+                                      });
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.image_outlined),
+                        ),
+                        IconButton(
+                          onPressed: _isImgPicked
+                              ? null
+                              : () async {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _isImgPicked = true;
+                                  });
+                                  try {
+                                    final ImagePicker picker = ImagePicker();
+                                    final XFile? image = await picker
+                                        .pickImage(source: ImageSource.camera);
+                                    if (image != null && mounted) {
+                                      setState(() {
+                                        _imageFile = File(image.path);
+                                      });
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isImgPicked = false;
+                                      });
+                                    }
+                                  }
+                                },
+                          icon: const Icon(Icons.camera_alt_outlined),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        _imageFile = null;
-                      });
-                    },
-                    child: const CircleAvatar(
-                      backgroundColor: Colors.black54,
-                      child: Icon(Icons.close, color: Colors.white),
-                    ),
-                  ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  onPressed: _isSendingMessage
+                      ? null
+                      : () async {
+                          if (_imageFile == null &&
+                              textController.text.trim().isEmpty) return;
+                          if (!mounted) return;
+                          setState(() => _isSendingMessage = true);
+
+                          try {
+                            if (_imageFile != null) {
+                              final imageUrl = await APIs.uploadFile(
+                                _imageFile!,
+                                'images/${DateTime.now().millisecondsSinceEpoch}.${_imageFile!.path.split('.').last}',
+                              );
+                              await APIs.sendMessage(
+                                widget.user,
+                                imageUrl,
+                                type: Type.image,
+                              );
+                              if (mounted) {
+                                setState(() {
+                                  _imageFile = null;
+                                });
+                              }
+                            } else if (textController.text.trim().isNotEmpty) {
+                              APIs.sendMessage(
+                                  widget.user, textController.text.trim());
+                              textController.clear();
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isSendingMessage = false);
+                            }
+                          }
+                        },
+                  child: _isSendingMessage
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Icon(Icons.send),
                 ),
               ],
             ),
-          Row(
-            children: [
-              Expanded(
-                child: Card(
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          ref.read(showEmojiProvider.notifier).state =
-                              !showEmoji;
-                        },
-                        icon: const Icon(Icons.emoji_emotions_outlined),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: textController,
-                          decoration: const InputDecoration(
-                            hintText: 'Message',
-                            border: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () async {
-                          final ImagePicker picker = ImagePicker();
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.gallery,
-                          );
-                          if (image != null) {
-                            setState(() {
-                              _imageFile = File(image.path);
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.image_outlined),
-                      ),
-                      IconButton(
-                        onPressed: () async {
-                          final ImagePicker picker = ImagePicker();
-                          final XFile? image = await picker.pickImage(
-                            source: ImageSource.camera,
-                          );
-                          if (image != null) {
-                            setState(() {
-                              _imageFile = File(image.path);
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.camera_alt_outlined),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FloatingActionButton(
-                onPressed: () async {
-                  if (_imageFile != null) {
-                    final imageUrl = await APIs.uploadFile(
-                      _imageFile!,
-                      'images/${DateTime.now().millisecondsSinceEpoch}.${_imageFile!.path.split('.').last}',
-                    );
-                    await APIs.sendMessage(
-                      widget.user,
-                      imageUrl,
-                      type: Type.image,
-                    );
-                    setState(() {
-                      _imageFile = null;
-                    });
-                  } else if (textController.text.trim().isNotEmpty) {
-                    APIs.sendMessage(widget.user, textController.text.trim());
-                    textController.clear();
-                  }
-                },
-                child: const Icon(Icons.send),
-              ),
-            ],
-          ),
-        ],
+            // SizedBox(height: 20,)
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -10,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zappychat/helper/dialogs.dart';
 import 'package:zappychat/providers/profile_providers.dart';
 import 'package:zappychat/screens/auth/login_screen.dart';
+import 'package:zappychat/providers/home_providers.dart';
 
 import '../api/apis.dart';
 import '../helper/theme.dart';
@@ -117,6 +117,10 @@ class ProfileScreen extends ConsumerWidget {
             Dialogs.showProgressBar(context);
             APIs.updateActiveStatus(false);
             await Supabase.instance.client.auth.signOut();
+            // Invalidate cached providers to ensure fresh state on next login
+            ref.invalidate(selfInfoProvider);
+            ref.invalidate(allUsersProvider);
+            ref.invalidate(userProvider);
             Navigator.pop(context); // for progress dialog
             Navigator.pop(context); // for profile screen
             Navigator.pushReplacement(

@@ -2,14 +2,16 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zappychat/helper/dialogs.dart';
 import 'package:zappychat/helper/theme.dart';
 import 'package:zappychat/screens/home_screen.dart';
+import 'package:zappychat/providers/home_providers.dart';
+import 'package:zappychat/providers/profile_providers.dart';
 
 import '../../api/apis.dart';
-import '../../main.dart';
 //login screen
 
 class LoginScreen extends StatefulWidget {
@@ -55,6 +57,11 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (await APIs.userExists()) {
         Navigator.pop(context);
+        // Clear any stale state from a previous session
+        final container = ProviderScope.containerOf(context);
+        container.invalidate(selfInfoProvider);
+        container.invalidate(allUsersProvider);
+        container.invalidate(userProvider);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -62,6 +69,10 @@ class _LoginScreenState extends State<LoginScreen>
       } else {
         await APIs.createUser();
         Navigator.pop(context);
+        final container = ProviderScope.containerOf(context);
+        container.invalidate(selfInfoProvider);
+        container.invalidate(allUsersProvider);
+        container.invalidate(userProvider);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),

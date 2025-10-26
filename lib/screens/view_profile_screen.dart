@@ -1,10 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:zappychat/helper/dialogs.dart';
 import 'package:zappychat/helper/my_date_util.dart';
-import 'package:zappychat/screens/auth/login_screen.dart';
-import '../api/apis.dart';
 import '../helper/theme.dart';
 import '../main.dart';
 import '../models/chat_user.dart';
@@ -23,7 +20,6 @@ class _ViewProfileScreen extends State<ViewProfileScreen> {
   @override
   void initState() {
     super.initState();
-    APIs.me = widget.user;
   }
 
   @override
@@ -85,7 +81,7 @@ class _ViewProfileScreen extends State<ViewProfileScreen> {
                       fit: BoxFit.fill,
                       placeholder:
                           (context, url) => Image.network(
-                            '${widget.user.image}', // 👈 fallback image while loading
+                            '${widget.user.image}', // fallback image while loading
                             fit: BoxFit.cover,
                           ),
                       imageUrl: widget.user.image,
