@@ -24,7 +24,7 @@ final aiMessagesProvider =
 class AiMessagesNotifier extends StateNotifier<List<AiMessage>> {
   AiMessagesNotifier()
     : model = GenerativeModel(
-        model: 'gemini-2.0-flash',
+        model: 'gemini-2.5-flash',
         apiKey: dotenv.env['GEMINI_API_KEY']!,
       ),
       super([
