@@ -9,7 +9,7 @@ jobs:
   ping-supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase health endpoint
+      - name: Ping Supabase project URL
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         run: |
@@ -18,4 +18,8 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent --show-error --max-time 20 "$SUPABASE_URL/auth/v1/health"
+          status=$(curl --silent --show-error --max-time 20 --output /dev/null --write-out "%{http_code}" "$SUPABASE_URL")
+          if [ "$status" != "200" ]; then
+            echo "Unexpected status code: $status"
+            exit 1
+          fi

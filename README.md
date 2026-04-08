@@ -42,7 +42,7 @@
 
 If your Supabase project is on a free or paused tier, add the GitHub Actions workflow in [`.github/workflows/supabase-keepalive.yml`](.github/workflows/supabase-keepalive.yml) and set a repository secret named `SUPABASE_URL` to your Supabase project URL.
 
-The workflow pings `/auth/v1/health` every 5 minutes to keep the project warm.
+The workflow pings your base `SUPABASE_URL` every 5 minutes to keep the project warm.
 
 ---
 
