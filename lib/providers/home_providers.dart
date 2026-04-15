@@ -49,8 +49,7 @@ final searchedUsersProvider = Provider<List<ChatUser>>((ref) {
 });
 
 final selfInfoProvider = FutureProvider.autoDispose<ChatUser>((ref) async {
-  await APIs.getSelfInfo();
-  return APIs.me;
+  return APIs.getSelfInfo();
 });
 
 // Stream of the latest message for a given user (or null if never messaged)

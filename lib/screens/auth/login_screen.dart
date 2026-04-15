@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -89,8 +90,7 @@ class _LoginScreenState extends State<LoginScreen>
     try {
       await InternetAddress.lookup('google.com');
       final GoogleSignIn googleSignIn = GoogleSignIn(
-        serverClientId:
-            '60256744621-050alteh2rkk4j74758j3grpf9i8qed7.apps.googleusercontent.com', // from google_services.json
+        serverClientId: dotenv.env['GOOGLE_SERVER_CLIENT_ID'],
       );
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {

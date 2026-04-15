@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import 'package:zappychat/models/message.dart';
 import 'package:mime/mime.dart';
 
@@ -8,6 +9,7 @@ import '../models/chat_user.dart';
 
 class APIs {
   static SupabaseClient supabase = Supabase.instance.client;
+  static const _uuid = Uuid();
   // for storing self info
   static late ChatUser me;
   // return currentUser
@@ -19,15 +21,17 @@ class APIs {
     return data.isNotEmpty;
   }
 
-  // for getting current user info
-  static Future<void> getSelfInfo() async {
+  // for getting current user info — returns the fetched user directly
+  static Future<ChatUser> getSelfInfo() async {
     final data = await supabase.from('users').select().eq('id', user.id);
     if (data.isNotEmpty) {
       me = ChatUser.fromJson(data[0]);
       updateActiveStatus(true);
       log('My data: $data');
+      return me;
     } else {
-      await createUser().then((value) => getSelfInfo());
+      await createUser();
+      return getSelfInfo();
     }
   }
 
@@ -35,10 +39,10 @@ class APIs {
     final time = DateTime.now().millisecondsSinceEpoch.toString();
     final chatUser = ChatUser(
       id: user.id,
-      name: user.userMetadata!['name'],
+      name: user.userMetadata?['name'] ?? 'ZappyChat User',
       email: user.email!,
       about: "Hey, I am using ZappyChat!",
-      image: user.userMetadata!['picture'],
+      image: user.userMetadata?['picture'] ?? '',
       createdAt: time,
       isOnline: false,
       lastActive: time,
@@ -52,12 +56,35 @@ class APIs {
     return supabase.from('users').stream(primaryKey: ['id']).neq('id', user.id);
   }
 
-  // update user info
+  // update user info (name + about)
   static Future<void> updateUserInfo() async {
-    await supabase
-        .from('users')
-        .update({'name': me.name, 'about': me.about})
-        .eq('id', me.id);
+    try {
+      await supabase
+          .from('users')
+          .update({'name': me.name, 'about': me.about})
+          .eq('id', me.id);
+    } catch (e) {
+      log('Error updating user info: $e');
+      rethrow;
+    }
+  }
+
+  // upload new profile picture and persist the URL
+  static Future<void> updateProfileImage(File imageFile) async {
+    try {
+      final ext = imageFile.path.split('.').last.toLowerCase();
+      final path = 'profile_images/${user.id}.$ext';
+      await uploadFile(imageFile, path);
+      // Use a long-lived signed URL for profile pictures (1 year)
+      final url = await supabase.storage
+          .from('chat-files')
+          .createSignedUrl(path, 365 * 24 * 60 * 60);
+      me.image = url;
+      await supabase.from('users').update({'image': url}).eq('id', me.id);
+    } catch (e) {
+      log('Error updating profile image: $e');
+      rethrow;
+    }
   }
 
   // getting specific user info
@@ -87,15 +114,39 @@ class APIs {
   // getting conversation id
   static String getConversationID(String id) =>
       user.id.hashCode <= id.hashCode ? '${user.id}_$id' : '${id}_${user.id}';
-  // chats (collection) --> conversation_id (doc) --> messages (collection) --> messages (doc)
 
-  // chat screen related apis
-  static Stream<List<Map<String, dynamic>>> getAllMessages(ChatUser user) {
+  // chat screen related apis — streams the most recent [limit] messages
+  static Stream<List<Map<String, dynamic>>> getAllMessages(
+    ChatUser user, {
+    int limit = 50,
+  }) {
     return supabase
         .from('messages')
-        .stream(primaryKey: ['sent'])
+        .stream(primaryKey: ['id'])
         .eq('conversation_id', getConversationID(user.id))
-        .order('sent', ascending: false);
+        .order('sent', ascending: false)
+        .limit(limit);
+  }
+
+  // fetch messages older than [beforeSent] (cursor-based pagination)
+  static Future<List<Message>> getOlderMessages(
+    ChatUser chatUser,
+    String beforeSent,
+    int limit,
+  ) async {
+    try {
+      final data = await supabase
+          .from('messages')
+          .select()
+          .eq('conversation_id', getConversationID(chatUser.id))
+          .lt('sent', beforeSent)
+          .order('sent', ascending: false)
+          .limit(limit);
+      return data.map((e) => Message.fromJson(e)).toList();
+    } catch (e) {
+      log('Error fetching older messages: $e');
+      rethrow;
+    }
   }
 
   // for sending msg
@@ -104,40 +155,46 @@ class APIs {
     String msg, {
     Type type = Type.text,
   }) async {
-    // msg sending time used as id
-    final time = DateTime.now().millisecondsSinceEpoch.toString();
-
-    // msg to send
-    final Message message = Message(
-      msg: msg,
-      read: '',
-      told: chatUser.id,
-      type: type,
-      sent: time,
-      fromId: user.id,
-    );
-
-    await supabase
-        .from('messages')
-        .insert(
-          message.toJson()
-            ..['conversation_id'] = getConversationID(chatUser.id),
-        );
+    try {
+      final time = DateTime.now().millisecondsSinceEpoch.toString();
+      final Message message = Message(
+        id: _uuid.v4(),
+        msg: msg,
+        read: '',
+        told: chatUser.id,
+        type: type,
+        sent: time,
+        fromId: user.id,
+      );
+      await supabase
+          .from('messages')
+          .insert(
+            message.toJson()
+              ..['conversation_id'] = getConversationID(chatUser.id),
+          );
+    } catch (e) {
+      log('Error sending message: $e');
+      rethrow;
+    }
   }
 
   // update read msg status
   static Future<void> updateMessageReadStatus(Message message) async {
-    await supabase
-        .from('messages')
-        .update({'read': DateTime.now().millisecondsSinceEpoch.toString()})
-        .eq('sent', message.sent);
+    try {
+      await supabase
+          .from('messages')
+          .update({'read': DateTime.now().millisecondsSinceEpoch.toString()})
+          .eq('id', message.id);
+    } catch (e) {
+      log('Error updating read status: $e');
+    }
   }
 
-  // get all msg of a specific chat
+  // get last msg of a specific chat
   static Stream<List<Map<String, dynamic>>> getLastMessage(ChatUser user) {
     return supabase
         .from('messages')
-        .stream(primaryKey: ['sent'])
+        .stream(primaryKey: ['id'])
         .eq('conversation_id', getConversationID(user.id))
         .order('sent', ascending: false)
         .limit(1);
@@ -145,15 +202,25 @@ class APIs {
 
   //  delete msg
   static Future<void> deleteMessage(Message message) async {
-    await supabase.from('messages').delete().eq('sent', message.sent);
+    try {
+      await supabase.from('messages').delete().eq('id', message.id);
+    } catch (e) {
+      log('Error deleting message: $e');
+      rethrow;
+    }
   }
 
   //  update msg
   static Future<void> updateMessage(Message message, String updatedMsg) async {
-    await supabase
-        .from('messages')
-        .update({'msg': updatedMsg})
-        .eq('sent', message.sent);
+    try {
+      await supabase
+          .from('messages')
+          .update({'msg': updatedMsg})
+          .eq('id', message.id);
+    } catch (e) {
+      log('Error updating message: $e');
+      rethrow;
+    }
   }
 
   static Future<String> uploadFile(File file, String path) async {

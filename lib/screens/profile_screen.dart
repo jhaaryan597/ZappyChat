@@ -279,16 +279,36 @@ class ProfileScreen extends ConsumerWidget {
                         backgroundColor: Colors.white.withOpacity(0.2),
                         foregroundColor: Colors.white,
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (formKey.currentState!.validate()) {
                           formKey.currentState!.save();
-                          APIs.me = userState; // Update the static instance
-                          APIs.updateUserInfo().then((value) {
-                            Dialogs.showSnackbar(
-                              context,
-                              'Profile Updated Successfully!',
-                            );
-                          });
+                          APIs.me = userState;
+                          Dialogs.showProgressBar(context);
+                          try {
+                            // Upload new profile picture if one was picked
+                            if (image != null) {
+                              await APIs.updateProfileImage(File(image));
+                              ref
+                                  .read(profileImageProvider.notifier)
+                                  .state = null;
+                            }
+                            await APIs.updateUserInfo();
+                            if (context.mounted) {
+                              Navigator.pop(context); // close progress bar
+                              Dialogs.showSnackbar(
+                                context,
+                                'Profile Updated Successfully!',
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              Navigator.pop(context); // close progress bar
+                              Dialogs.showSnackbar(
+                                context,
+                                'Failed to update profile. Check your connection.',
+                              );
+                            }
+                          }
                         }
                       },
                       icon: const Icon(Icons.edit),

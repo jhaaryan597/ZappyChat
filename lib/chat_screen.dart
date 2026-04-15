@@ -26,7 +26,7 @@ class ChatScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final textController = ref.watch(textControllerProvider);
     final showEmoji = ref.watch(showEmojiProvider);
-    final messages = ref.watch(messagesProvider(user));
+    final messagesAsync = ref.watch(messagesProvider(user));
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -44,15 +44,36 @@ class ChatScreen extends ConsumerWidget {
           child: Column(
             children: [
               Expanded(
-                child: messages.when(
-                  data: (list) {
+                child: messagesAsync.when(
+                  data: (state) {
+                    final list = state.messages;
                     if (list.isNotEmpty) {
                       return ListView.builder(
                         reverse: true,
-                        itemCount: list.length,
+                        // +1 slot for the load-more indicator at the top
+                        itemCount: list.length + 1,
                         padding: EdgeInsets.only(top: mq.height * 0.01),
                         physics: const BouncingScrollPhysics(),
                         itemBuilder: (context, index) {
+                          // Last slot (appears at the top in a reversed list)
+                          if (index == list.length) {
+                            if (state.isLoadingMore) {
+                              return const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Center(
+                                    child: CircularProgressIndicator()),
+                              );
+                            }
+                            if (state.hasMore) {
+                              return TextButton(
+                                onPressed: () => ref
+                                    .read(messagesProvider(user).notifier)
+                                    .loadMore(),
+                                child: const Text('Load older messages'),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          }
                           return MessageCard(message: list[index]);
                         },
                       );
@@ -67,10 +88,17 @@ class ChatScreen extends ConsumerWidget {
                   },
                   loading:
                       () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(child: Text('Error: $error')),
+                  error: (error, stack) => const Center(
+                    child: Text(
+                      'Could not load messages.\nCheck your connection and try again.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
               ),
-              ChatInput(user: user, messages: messages.value ?? []),
+              ChatInput(
+                  user: user,
+                  messages: messagesAsync.asData?.value.messages ?? []),
               if (showEmoji)
                 SizedBox(
                   height: mq.height * 0.35,
@@ -384,6 +412,35 @@ class _ChatInputState extends ConsumerState<ChatInput>
                           if (_imageFile == null &&
                               textController.text.trim().isEmpty) return;
                           if (!mounted) return;
+
+                          // Validate message length
+                          if (_imageFile == null &&
+                              textController.text.trim().length > 500) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Message is too long (max 500 characters)'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Validate image file size (max 10 MB)
+                          if (_imageFile != null) {
+                            final sizeInBytes = await _imageFile!.length();
+                            if (sizeInBytes > 10 * 1024 * 1024) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Image is too large (max 10 MB)'),
+                                  ),
+                                );
+                              }
+                              return;
+                            }
+                          }
+
                           setState(() => _isSendingMessage = true);
 
                           try {
@@ -403,9 +460,18 @@ class _ChatInputState extends ConsumerState<ChatInput>
                                 });
                               }
                             } else if (textController.text.trim().isNotEmpty) {
-                              APIs.sendMessage(
+                              await APIs.sendMessage(
                                   widget.user, textController.text.trim());
                               textController.clear();
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Failed to send message. Check your connection.'),
+                                ),
+                              );
                             }
                           } finally {
                             if (mounted) {

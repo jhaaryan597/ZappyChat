@@ -165,23 +165,27 @@ class _MessageCardState extends State<MessageCard> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            _OptionItem(
-              icon: Icon(Icons.copy_all_rounded, color: Colors.blue, size: 26),
-              name: 'Copy Text',
-              onTap: () async {
-                await Clipboard.setData(
-                  ClipboardData(text: widget.message.msg),
-                ).then((value) {
-                  Navigator.pop(context);
-                  Dialogs.showSnackbar(context, 'Text Copied!');
-                });
-              },
-            ),
-            Divider(
-              color: Colors.black54,
-              endIndent: mq.width * 0.05,
-              indent: mq.width * 0.05,
-            ),
+            if (widget.message.type == Type.text)
+              _OptionItem(
+                icon:
+                    const Icon(Icons.copy_all_rounded, color: Colors.blue, size: 26),
+                name: 'Copy Text',
+                onTap: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: widget.message.msg),
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    Dialogs.showSnackbar(context, 'Text Copied!');
+                  }
+                },
+              ),
+            if (widget.message.type == Type.text)
+              Divider(
+                color: Colors.black54,
+                endIndent: mq.width * 0.05,
+                indent: mq.width * 0.05,
+              ),
             if (isMe)
               _OptionItem(
                 icon: Icon(Icons.edit, color: Colors.blue, size: 26),

@@ -1,5 +1,6 @@
 class Message {
   Message({
+    required this.id,
     required this.msg,
     required this.read,
     required this.told,
@@ -7,6 +8,7 @@ class Message {
     required this.sent,
     required this.fromId,
   });
+  late final String id; // UUID - true primary key
   late final String msg;
   late final String read;
   late final String told;
@@ -15,6 +17,10 @@ class Message {
   late final String fromId;
 
   Message.fromJson(Map<String, dynamic> json) {
+    // Fall back to 'sent' for messages created before the UUID migration
+    id = (json['id'] != null && json['id'].toString().isNotEmpty)
+        ? json['id'].toString()
+        : json['sent'].toString();
     msg = json['msg'].toString();
     read = json['read'].toString();
     told = json['told'].toString();
@@ -25,6 +31,7 @@ class Message {
 
   Map<String, dynamic> toJson() {
     final data = <String, dynamic>{};
+    data['id'] = id;
     data['msg'] = msg;
     data['read'] = read;
     data['told'] = told;
@@ -35,7 +42,7 @@ class Message {
   }
 }
 
-enum Type { text, image, imageQuestion }
+enum Type { text, image }
 
 // ai message
 class AiMessage {
